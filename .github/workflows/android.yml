@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_ecutuner
 
     steps:
       - name: Checkout Code
@@ -38,6 +41,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ECUTuner-V61-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-      
+          path: mobile_ecutuner/build/app/outputs/flutter-apk/app-release.apk
