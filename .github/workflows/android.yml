@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: mobile_ecutuner
@@ -27,9 +28,15 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.x'
+          flutter-version: '3.24.5'
           channel: 'stable'
           cache: true
+
+      - name: Clean Flutter and Build Cache
+        run: |
+          flutter clean
+          rm -rf build
+          rm -rf .dart_tool
 
       - name: Install Dependencies
         run: flutter pub get
