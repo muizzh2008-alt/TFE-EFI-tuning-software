@@ -24,6 +24,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -34,14 +35,11 @@ jobs:
 
       - name: Install Android SDK 34
         run: |
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-34"
-
-      -- name: Regenerate Android Files
-run: |
-    flutter clean
-    rm -rf android
-    flutter create . --platforms android
+          yes | "$ANDROID_SDK_ROOT"/cmdline-tools/latest/bin/sdkmanager --licenses
+          yes | "$ANDROID_SDK_ROOT"/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools"
 
       - name: Install Dependencies
         run: flutter pub get
