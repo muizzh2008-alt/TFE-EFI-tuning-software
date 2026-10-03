@@ -37,11 +37,11 @@ jobs:
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-34"
 
-      - name: Clean Flutter and Build Cache
-        run: |
-          flutter clean
-          rm -rf build
-          rm -rf .dart_tool
+      -- name: Regenerate Android Files
+run: |
+    flutter clean
+    rm -rf android
+    flutter create . --platforms android
 
       - name: Install Dependencies
         run: flutter pub get
