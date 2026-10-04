@@ -8,7 +8,7 @@ allprojects {
 ext {
     compileSdkVersion = 34
     targetSdkVersion = 34
-    minSdkVersion = 23
+    minSdkVersion = 24
 }
 
 rootProject.buildDir = '../build'
