@@ -29,13 +29,15 @@ jobs:
           cache: true
 
       - name: Install Dependencies
+        working-directory: mobile_ecutuner         
         run: flutter pub get
 
       - name: Build Release APK
+        working-directory: mobile_ecutuner          
         run: flutter build apk --release
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ECUTuner-V61-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: mobile_ecutuner/build/app/outputs/flutter-apk/app-release.apk  
