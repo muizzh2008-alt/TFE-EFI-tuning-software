@@ -5,13 +5,23 @@ plugins {
 }
 
 android {
+    namespace "com.ecutuner.v61.mobile_ecutuner"
     compileSdkVersion rootProject.ext.compileSdkVersion
-    
+
     defaultConfig {
         applicationId "com.example.mobile_ecutuner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 }
