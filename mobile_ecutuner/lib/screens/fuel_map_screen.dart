@@ -328,7 +328,7 @@ class FuelMapScreen extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Table(
-              defaultColumnWidth: const FixedWidthColumnWidth(42),
+              defaultColumnWidth: const FixedColumnWidth(42),
               children: List.generate(16, (r) {
                 return TableRow(
                   children: List.generate(16, (c) {
