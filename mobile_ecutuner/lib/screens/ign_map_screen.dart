@@ -209,7 +209,7 @@ class IgnMapScreen extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Table(
-              defaultColumnWidth: const FixedWidthColumnWidth(38),
+              defaultColumnWidth: const FixedColumnWidth(38),
               children: List.generate(16, (r) {
                 return TableRow(
                   children: List.generate(16, (c) {
