@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace "com.ecutuner.v61.mobile_ecutuner"
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion 35
     ndkVersion "28.2.13676358"
 
     defaultConfig {
