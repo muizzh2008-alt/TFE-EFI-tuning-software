@@ -158,8 +158,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           _buildHealthRow("Suhu Udara Masuk (IAT)", "${telem.iat} °C", AppColors.textPrimary),
           _buildHealthRow("Air-Fuel Ratio (AFR)", telem.afr.toStringAsFixed(1), (telem.afr < 12 || telem.afr > 15.5) ? AppColors.alertRed : AppColors.neonLime),
           _buildHealthRow("Tekanan Minyak Hitam", "${telem.oilPsi} PSI", telem.oilPsi < 15 ? AppColors.alertRed : AppColors.neonLime),
-          _buildHealthRow("Tempoh Suntikan Bahan Api (Pulse)", "${telem.pulseWidthUs} µs", AppColors.neonCyan),
-          _buildHealthRow("Sudut Nyalaan Api (Ign Advance)", "${telem.ignAdvanceDeg} °BTDC", AppColors.racingAmber),
+          _buildHealthRow("Tempoh Suntikan Bahan Api (Pulse)", "${telem.pwMicroseconds} µs", AppColors.neonCyan),
         ],
       ),
     );
