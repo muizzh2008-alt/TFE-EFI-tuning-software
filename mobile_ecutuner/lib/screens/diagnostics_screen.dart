@@ -36,7 +36,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1. Live System Health & Alarms
-            _buildActiveAlarmsCard(telem.errFlags, telem.oilPsi),
+            _buildActiveAlarmsCard(telem.errorFlags, telem.oilPsi),
             const SizedBox(height: 12),
 
             // 2. Real-Time Sensor Health Table
