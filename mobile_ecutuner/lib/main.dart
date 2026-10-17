@@ -33,7 +33,6 @@ class EcuTunerMobileApp extends StatelessWidget {
             primary: AppColors.neonLime,
             secondary: AppColors.neonCyan,
             surface: AppColors.surfaceDark,
-            background: AppColors.backgroundDark,
             error: AppColors.alertRed,
           ),
           appBarTheme: const AppBarTheme(
@@ -47,7 +46,7 @@ class EcuTunerMobileApp extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             color: AppColors.surfaceDark,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
