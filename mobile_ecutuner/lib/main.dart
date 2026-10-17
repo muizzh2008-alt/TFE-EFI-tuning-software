@@ -46,7 +46,7 @@ class EcuTunerMobileApp extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          cardTheme: CardThemeData(
+          cardTheme: CardTheme(
             color: AppColors.surfaceDark,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
