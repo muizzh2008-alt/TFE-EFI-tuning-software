@@ -253,6 +253,144 @@ class FuelMapScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
+          // Target AFR Configuration & Mode Selector
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.cardDark,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.borderDark),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "MOD TARGET AFR:",
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                    Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text("ZONE TARGET", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          selected: state.mode == AutoTuneMode.zone,
+                          selectedColor: AppColors.neonLime,
+                          labelStyle: TextStyle(color: state.mode == AutoTuneMode.zone ? Colors.black : Colors.white),
+                          backgroundColor: const Color(0xFF1E293B),
+                          onSelected: (sel) {
+                            if (sel) mapProv.setAutoTuneMode(AutoTuneMode.zone, state.manualTargetAfr);
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text("MANUAL TARGET", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          selected: state.mode == AutoTuneMode.manual,
+                          selectedColor: AppColors.racingAmber,
+                          labelStyle: TextStyle(color: state.mode == AutoTuneMode.manual ? Colors.black : Colors.white),
+                          backgroundColor: const Color(0xFF1E293B),
+                          onSelected: (sel) {
+                            if (sel) mapProv.setAutoTuneMode(AutoTuneMode.manual, state.manualTargetAfr);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                if (state.mode == AutoTuneMode.manual) ...[
+                  // Manual Target AFR Input Column
+                  Row(
+                    children: [
+                      const Text(
+                        "NILAI TARGET AFR:",
+                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      // Stepper [-]
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline_rounded, color: AppColors.neonCyan, size: 22),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          final newTarget = (state.manualTargetAfr - 0.1).clamp(10.0, 18.0);
+                          mapProv.setAutoTuneMode(AutoTuneMode.manual, double.parse(newTarget.toStringAsFixed(1)));
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      // Target AFR Display
+                      GestureDetector(
+                        onTap: () => _showManualAfrInputDialog(context, mapProv, state.manualTargetAfr),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.lcdBackground,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.racingAmber),
+                          ),
+                          child: Text(
+                            state.manualTargetAfr.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontFamily: 'Courier',
+                              color: AppColors.racingAmber,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Stepper [+]
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.neonCyan, size: 22),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          final newTarget = (state.manualTargetAfr + 0.1).clamp(10.0, 18.0);
+                          mapProv.setAutoTuneMode(AutoTuneMode.manual, double.parse(newTarget.toStringAsFixed(1)));
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Quick Preset Pills
+                  Row(
+                    children: [
+                      const Text("Preset: ", style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                      const SizedBox(width: 4),
+                      _buildAfrPresetChip(mapProv, 12.5, "12.5 Power", state.manualTargetAfr),
+                      const SizedBox(width: 4),
+                      _buildAfrPresetChip(mapProv, 12.8, "12.8 Sport", state.manualTargetAfr),
+                      const SizedBox(width: 4),
+                      _buildAfrPresetChip(mapProv, 13.0, "13.0 Safe", state.manualTargetAfr),
+                      const SizedBox(width: 4),
+                      _buildAfrPresetChip(mapProv, 14.7, "14.7 Eco", state.manualTargetAfr),
+                    ],
+                  ),
+                ] else ...[
+                  // Zone Target Description
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      "Zone Target: Lengkung AFR dinamik mengikut tekanan Manifold (MAP kPa).\n"
+                      "• 20-50 kPa (Idle/Cruising): 14.7 AFR (Penjimatan)\n"
+                      "• 50-80 kPa (Mid-Load): 13.2 - 13.5 AFR (Respons pantas)\n"
+                      "• 80-250+ kPa (WOT/Boost): 12.5 AFR (Kuasa tinggi & selamat)",
+                      style: TextStyle(color: AppColors.neonCyan, fontSize: 9.5, height: 1.3),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
           // 3-Step Human Verification Action Buttons
           Row(
             children: [
@@ -498,5 +636,81 @@ class FuelMapScreen extends StatelessWidget {
         SnackBar(content: Text("Ralat menyimpan fail CSV: $e"), backgroundColor: AppColors.alertRed),
       );
     }
+  }
+
+  Widget _buildAfrPresetChip(EcuMapProvider mapProv, double afr, String label, double currentAfr) {
+    final bool isSelected = (currentAfr == afr);
+    return InkWell(
+      onTap: () => mapProv.setAutoTuneMode(AutoTuneMode.manual, afr),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.racingAmber : const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: isSelected ? AppColors.racingAmber : AppColors.borderDark),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.black : Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showManualAfrInputDialog(BuildContext context, EcuMapProvider mapProv, double currentTarget) {
+    final controller = TextEditingController(text: currentTarget.toStringAsFixed(1));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        title: const Text("TETAPKAN TARGET AFR", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Masukkan nilai Target AFR (Julat 10.0 - 18.0):", style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              style: const TextStyle(fontFamily: 'Courier', color: AppColors.racingAmber, fontSize: 16, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: AppColors.cardDark,
+                suffixText: "AFR",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("BATAL", style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.racingAmber, foregroundColor: Colors.black),
+            onPressed: () {
+              final val = double.tryParse(controller.text);
+              if (val != null && val >= 10.0 && val <= 18.0) {
+                mapProv.setAutoTuneMode(AutoTuneMode.manual, double.parse(val.toStringAsFixed(1)));
+                Navigator.pop(ctx);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Nilai AFR mestilah antara 10.0 dan 18.0"), backgroundColor: AppColors.alertRed),
+                );
+              }
+            },
+            child: const Text("SIMPAN", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 }
