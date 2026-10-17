@@ -21,6 +21,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _shiftRpmController;
   late TextEditingController _pumpIdleController;
   late TextEditingController _pumpWotController;
+  late TextEditingController _wifiPassController;
+  bool _obscureWifiPass = true;
+  bool _wifiOpenCheckbox = false;
   double _fanCycleMs = 3000;
 
   @override
@@ -34,6 +37,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _pumpIdleController = TextEditingController(text: "${p.pumpIdleDuty}");
     _pumpWotController = TextEditingController(text: "${p.pumpWotDuty}");
     _fanCycleMs = p.fanPwmCycleMs.toDouble();
+    _wifiPassController = TextEditingController(text: p.wifiPassword);
+    _wifiOpenCheckbox = p.wifiOpen;
   }
 
   @override
@@ -108,6 +113,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: _tdcController,
                 unit: "°",
                 onSend: () => settingsProv.sendTdcOffset(int.tryParse(_tdcController.text) ?? 0),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // SETUP / DRIVE MODE SELECTOR CARD
+          _buildCard(
+            title: "SETUP / DRIVE MODE (MAP SELECT)",
+            icon: Icons.sports_motorsports_rounded,
+            color: AppColors.racingAmber,
+            children: [
+              const Text(
+                "Pilih mod pemanduan ECU aktif (Peta 1-6):",
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(6, (idx) {
+                  final modeNum = idx + 1;
+                  final isCurrent = (settingsProv.driveMode == modeNum);
+                  final modeNames = ["STREET", "SPORT", "RACE", "DYNO", "DRAG", "ECO"];
+                  return ChoiceChip(
+                    label: Text("MODE $modeNum: ${modeNames[idx]}",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isCurrent ? Colors.black : Colors.white,
+                        )),
+                    selected: isCurrent,
+                    selectedColor: AppColors.racingAmber,
+                    backgroundColor: AppColors.cardDark,
+                    onSelected: (selected) async {
+                      if (selected) {
+                        final ok = await settingsProv.sendDriveMode(modeNum);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(ok ? "Berjaya tukar ke Mode $modeNum!" : "Gagal hantar arahan Mode $modeNum"),
+                              backgroundColor: ok ? AppColors.neonLime : AppColors.alertRed,
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ANTI-LAG SYSTEM (ALS) CARD
+          _buildCard(
+            title: "ANTI-LAG SYSTEM (ALS)",
+            icon: Icons.local_fire_department_rounded,
+            color: settingsProv.alsEnabled ? AppColors.alertRed : AppColors.borderDark,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Aktifkan Anti-Lag (ALS):", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        Text("Menghasilkan letupan pembakaran untuk spooling turbo / respons throttle.", style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: settingsProv.alsEnabled,
+                    activeColor: AppColors.alertRed,
+                    onChanged: (val) async {
+                      await settingsProv.sendAls(val);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(val ? "🔥 ALS Diaktifkan!" : "ALS Dinyahaktifkan."),
+                            backgroundColor: val ? AppColors.alertRed : AppColors.surfaceDark,
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -215,6 +309,181 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _showTestResultSnackBar(context, res, "Fuel Pump");
                         }
                       },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ESP32 WI-FI CONFIGURATION & SECURITY CARD (Port dari PC)
+          _buildCard(
+            title: "ESP32 WI-FI CONFIGURATION & SECURITY",
+            icon: Icons.wifi_rounded,
+            color: AppColors.neonCyan,
+            children: [
+              const Text(
+                "Konfigurasi Hotspot Wi-Fi SoftAP pada cip ESP32 ECU:",
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+              const SizedBox(height: 8),
+
+              // Open Wi-Fi Checkbox
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: const Text(
+                  "Tanpa Kata Laluan (Open Wi-Fi)",
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text(
+                  "Hotspot boleh disambung terus tanpa kata laluan (WPA2 dinyahaktifkan).",
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 10),
+                ),
+                value: _wifiOpenCheckbox,
+                activeColor: AppColors.racingAmber,
+                checkColor: Colors.black,
+                onChanged: (val) {
+                  setState(() {
+                    _wifiOpenCheckbox = val ?? false;
+                  });
+                },
+              ),
+              const SizedBox(height: 6),
+
+              // Password input (if not open)
+              if (!_wifiOpenCheckbox) ...[
+                Row(
+                  children: [
+                    const Expanded(
+                      flex: 2,
+                      child: Text("Kata Laluan Wi-Fi:", style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: _wifiPassController,
+                        obscureText: _obscureWifiPass,
+                        style: const TextStyle(fontFamily: 'Courier', color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          filled: true,
+                          fillColor: AppColors.cardDark,
+                          hintText: "Min 8 aksara",
+                          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscureWifiPass ? Icons.visibility_off : Icons.visibility, size: 16, color: AppColors.textMuted),
+                            onPressed: () => setState(() => _obscureWifiPass = !_obscureWifiPass),
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: AppColors.borderDark)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.lock_reset_rounded, size: 14),
+                      label: Text(
+                        _wifiOpenCheckbox ? "JADIKAN OPEN WI-FI" : "SET KATA LALUAN",
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _wifiOpenCheckbox ? AppColors.racingAmber : AppColors.neonCyan,
+                        foregroundColor: _wifiOpenCheckbox ? Colors.black : Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      onPressed: () async {
+                        if (_wifiOpenCheckbox) {
+                          final ok = await settingsProv.sendWifiOpen();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(ok ? "Berjaya! Wi-Fi ECU kini OPEN tanpa password." : "Gagal hantar konfigurasi Wi-Fi"),
+                                backgroundColor: ok ? AppColors.neonLime : AppColors.alertRed,
+                              ),
+                            );
+                          }
+                        } else {
+                          final pw = _wifiPassController.text.trim();
+                          if (pw.length < 8) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Kata laluan WPA2 mesti sekurang-kurangnya 8 aksara!"),
+                                backgroundColor: AppColors.alertRed,
+                              ),
+                            );
+                            return;
+                          }
+                          final ok = await settingsProv.sendWifiPassword(pw);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(ok ? "Kata laluan Wi-Fi berjaya disimpan ke EEPROM ECU!" : "Gagal hantar kata laluan Wi-Fi"),
+                                backgroundColor: ok ? AppColors.neonLime : AppColors.alertRed,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.refresh_rounded, size: 14),
+                      label: const Text("BACA STATUS ECU", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.neonCyan,
+                        side: const BorderSide(color: AppColors.neonCyan),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      onPressed: () async {
+                        await settingsProv.fetchWifiConfig();
+                        setState(() {
+                          _wifiOpenCheckbox = settingsProv.wifiOpen;
+                          _wifiPassController.text = settingsProv.wifiPassword;
+                        });
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Status Wi-Fi: ${settingsProv.wifiOpen ? 'OPEN (Tanpa Kata Laluan)' : 'WPA2 Dilindungi'}"),
+                              backgroundColor: AppColors.surfaceDark,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Network Info Container
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.cardDark,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.borderDark),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("MAKLUMAT RANGKAIAN ECU ESP32:", style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 4),
+                    Text("• SSID Hotspot: ECUTUNER_AP", style: TextStyle(color: Colors.white, fontSize: 10, fontFamily: 'Courier')),
+                    Text("• IP Gateway: 192.168.4.1", style: TextStyle(color: Colors.white, fontSize: 10, fontFamily: 'Courier')),
+                    Text("• Tuning TCP Port: 8080 (Data & Telemetri)", style: TextStyle(color: AppColors.neonLime, fontSize: 10, fontFamily: 'Courier')),
+                    Text("• Web Dashboard: http://192.168.4.1 (Port 80)", style: TextStyle(color: AppColors.neonCyan, fontSize: 10, fontFamily: 'Courier')),
+                  ],
+                ),
               ),
             ],
           ),
@@ -388,6 +657,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _shiftRpmController.dispose();
     _pumpIdleController.dispose();
     _pumpWotController.dispose();
+    _wifiPassController.dispose();
     super.dispose();
   }
 }
