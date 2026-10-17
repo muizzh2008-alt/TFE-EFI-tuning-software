@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../core/constants/app_colors.dart';
 import '../providers/ecu_settings_provider.dart';
 import '../providers/ecu_telemetry_provider.dart';
-import '../widgets/digital_lcd_card.dart';
 
 class AfrCalibrationScreen extends StatefulWidget {
   const AfrCalibrationScreen({super.key});
