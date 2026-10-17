@@ -36,6 +36,11 @@ class EcuSettingsProvider extends ChangeNotifier {
   int _shiftLightRpm = 10500;
   bool _shiftLightEnabled = true;
 
+  // ESP32 Wi-Fi Configuration
+  bool _wifiOpen = false;
+  String _wifiPassword = "ecutunerpass";
+  bool _isLoadingWifi = false;
+
   // DTC History
   List<DtcRecord> _dtcList = [];
   bool _isLoadingDtc = false;
@@ -61,10 +66,64 @@ class EcuSettingsProvider extends ChangeNotifier {
   String get tpsCalStepMessage => _tpsCalStepMessage;
   int get shiftLightRpm => _shiftLightRpm;
   bool get shiftLightEnabled => _shiftLightEnabled;
+  bool get wifiOpen => _wifiOpen;
+  String get wifiPassword => _wifiPassword;
+  bool get isLoadingWifi => _isLoadingWifi;
   List<DtcRecord> get dtcList => _dtcList;
   bool get isLoadingDtc => _isLoadingDtc;
 
   // Senders
+  Future<bool> sendDriveMode(int mode) async {
+    _driveMode = mode.clamp(1, 6);
+    final res = await _ble.sendCommandWithAck(CommandBuilder.setDriveMode(_driveMode));
+    notifyListeners();
+    return res == "ACK";
+  }
+
+  Future<bool> sendAls(bool enabled) async {
+    _alsEnabled = enabled;
+    final res = await _ble.sendCommandWithAck(CommandBuilder.setAls(_alsEnabled));
+    notifyListeners();
+    return res == "ACK";
+  }
+
+  Future<bool> sendWifiOpen() async {
+    _wifiOpen = true;
+    final res = await _ble.sendCommandWithAck(CommandBuilder.setWifiOpen());
+    notifyListeners();
+    return res == "ACK:WIFI_OPEN" || res == "ACK";
+  }
+
+  Future<bool> sendWifiPassword(String password) async {
+    _wifiOpen = false;
+    _wifiPassword = password;
+    final res = await _ble.sendCommandWithAck(CommandBuilder.setWifiPassword(password));
+    notifyListeners();
+    return res == "ACK:WIFI_PASS_SET" || res == "ACK";
+  }
+
+  Future<void> fetchWifiConfig() async {
+    _isLoadingWifi = true;
+    notifyListeners();
+    final res = await _ble.sendCommandWithAck(CommandBuilder.getWifiConfig(), timeout: const Duration(seconds: 2));
+    if (res != null) {
+      if (res.contains("WIFI:OPEN")) {
+        _wifiOpen = true;
+      } else if (res.contains("WIFI:PASS:")) {
+        _wifiOpen = false;
+        final lines = res.split('\n');
+        for (final l in lines) {
+          if (l.trim().startsWith("WIFI:PASS:")) {
+            _wifiPassword = l.trim().substring(10);
+            break;
+          }
+        }
+      }
+    }
+    _isLoadingWifi = false;
+    notifyListeners();
+  }
+
   Future<bool> sendRevLimit(int rpm) async {
     _revLimit = rpm.clamp(1000, 16000);
     final res = await _ble.sendCommandWithAck(CommandBuilder.setRevLimit(_revLimit));
