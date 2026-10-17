@@ -63,6 +63,7 @@ class AnalogGauge extends StatelessWidget {
                 primaryColor: primaryColor,
                 warningColor: warningColor ?? AppColors.racingAmber,
                 criticalColor: criticalColor ?? AppColors.alertRed,
+                decimals: decimals,
               ),
               child: Container(),
             ),
@@ -115,6 +116,7 @@ class _AnalogGaugePainter extends CustomPainter {
   final Color primaryColor;
   final Color warningColor;
   final Color criticalColor;
+  final int decimals;
 
   _AnalogGaugePainter({
     required this.value,
@@ -125,6 +127,7 @@ class _AnalogGaugePainter extends CustomPainter {
     required this.primaryColor,
     required this.warningColor,
     required this.criticalColor,
+    this.decimals = 0,
   });
 
   @override
@@ -176,8 +179,10 @@ class _AnalogGaugePainter extends CustomPainter {
       activePaint,
     );
 
-    // 3. Tick Marks
-    const numTicks = 6;
+    // 3. Tick Marks & Numeric Labels (Senggatan Bernombor)
+    final int numTicks = (radius > 55) ? 6 : 4;
+    final double labelFontSize = (radius * 0.12).clamp(6.5, 9.0);
+
     for (int i = 0; i <= numTicks; i++) {
       final tickAngle = startAngle + (sweepAngle * (i / numTicks));
       final p1 = Offset(
@@ -185,15 +190,60 @@ class _AnalogGaugePainter extends CustomPainter {
         center.dy + (radius - 12) * sin(tickAngle),
       );
       final p2 = Offset(
-        center.dx + (radius - 7) * cos(tickAngle),
-        center.dy + (radius - 7) * sin(tickAngle),
+        center.dx + (radius - 6) * cos(tickAngle),
+        center.dy + (radius - 6) * sin(tickAngle),
       );
 
       final tickPaint = Paint()
-        ..color = AppColors.textMuted
-        ..strokeWidth = 1.2;
+        ..color = (i == 0 || i == numTicks) ? AppColors.textSecondary : AppColors.textMuted
+        ..strokeWidth = (i == 0 || i == numTicks) ? 1.8 : 1.2;
 
       canvas.drawLine(p1, p2, tickPaint);
+
+      // Kira dan format nilai senggatan
+      final double tickVal = minValue + (maxValue - minValue) * (i / numTicks);
+      String labelText;
+      if (maxValue >= 1000) {
+        // e.g. RPM: 0, 2, 4, 6, 8, 10, 12 (skala ribuan)
+        if (maxValue >= 10000) {
+          labelText = (tickVal / 1000).toStringAsFixed(tickVal % 1000 == 0 ? 0 : 1);
+        } else {
+          labelText = (tickVal / 1000).toStringAsFixed(1);
+        }
+      } else if (decimals > 0) {
+        labelText = tickVal.toStringAsFixed(decimals);
+      } else {
+        labelText = tickVal.round().toString();
+      }
+
+      final textSpan = TextSpan(
+        text: labelText,
+        style: TextStyle(
+          color: const Color(0xFFCBD5E1),
+          fontSize: labelFontSize,
+          fontFamily: 'Courier',
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+
+      // Letakkan nombor senggatan di dalam bulatan senggatan
+      final double textRadius = radius - (radius > 55 ? 24 : 18);
+      final textCenter = Offset(
+        center.dx + textRadius * cos(tickAngle),
+        center.dy + textRadius * sin(tickAngle),
+      );
+
+      final textOffset = Offset(
+        textCenter.dx - textPainter.width / 2,
+        textCenter.dy - textPainter.height / 2,
+      );
+
+      textPainter.paint(canvas, textOffset);
     }
 
     // 4. Glowing Needle
