@@ -320,7 +320,7 @@ class DashboardScreen extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 8),
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: isSelected ? AppColors.racingAmber.withOpacity(alpha: 0.15) : AppColors.surfaceDark,
+                      backgroundColor: isSelected ? AppColors.racingAmber.withOpacity(0.15) : AppColors.surfaceDark,
                       side: BorderSide(
                         color: isSelected ? AppColors.racingAmber : AppColors.borderDark,
                         width: isSelected ? 1.8 : 1.0,
