@@ -8,6 +8,11 @@ import '../core/constants/ble_constants.dart';
 import '../core/protocol/packet_parser.dart';
 import '../models/telemetry_data.dart';
 
+enum ConnectionMedium {
+  bluetooth,
+  wifi,
+}
+
 enum BleConnectionStatus {
   disconnected,
   bluetoothOff,
@@ -24,9 +29,14 @@ class BleService {
   factory BleService() => _instance;
   BleService._internal();
 
+  ConnectionMedium _activeMedium = ConnectionMedium.bluetooth;
   BluetoothDevice? _connectedDevice;
   BluetoothCharacteristic? _writeCharacteristic;
-  BluetoothCharacteristic? _notifyCharacteristic;
+
+  // Wi-Fi TCP Socket
+  Socket? _wifiSocket;
+  String _wifiHost = "192.168.4.1";
+  int _wifiPort = 8080;
 
   BleConnectionStatus _status = BleConnectionStatus.disconnected;
   String _statusDetail = "ECU Offline";
@@ -48,15 +58,22 @@ class BleService {
   BleConnectionStatus get status => _status;
   String get statusDetail => _statusDetail;
   bool get isConnected => _status == BleConnectionStatus.connected;
+  ConnectionMedium get activeMedium => _activeMedium;
+  bool get isWifi => _activeMedium == ConnectionMedium.wifi;
+  bool get isBluetooth => _activeMedium == ConnectionMedium.bluetooth;
+  String get wifiHost => _wifiHost;
+  int get wifiPort => _wifiPort;
   BluetoothDevice? get connectedDevice => _connectedDevice;
 
   final List<int> _rxBuffer = [];
 
   Future<void> init() async {
-    // Monitor Bluetooth Adapter State
+    // Monitor Bluetooth Adapter State (only affects Bluetooth mode)
     FlutterBluePlus.adapterState.listen((state) {
       if (state != BluetoothAdapterState.on) {
-        _updateStatus(BleConnectionStatus.bluetoothOff, "Bluetooth pada telefon MATI");
+        if (_activeMedium == ConnectionMedium.bluetooth && _status != BleConnectionStatus.disconnected) {
+          _updateStatus(BleConnectionStatus.bluetoothOff, "Bluetooth pada telefon MATI");
+        }
       } else {
         if (_status == BleConnectionStatus.bluetoothOff) {
           _updateStatus(BleConnectionStatus.disconnected, "Bluetooth Bersedia");
@@ -70,18 +87,25 @@ class BleService {
     _status = newStatus;
     _statusDetail = detail;
     _statusController.add(newStatus);
-    debugPrint("[BLE Service] Status: $newStatus | $detail");
+    debugPrint("[ECU Service] Medium: $_activeMedium | Status: $newStatus | $detail");
   }
 
-  /// Attempts to automatically connect to last saved MAC address
+  /// Attempts to automatically connect to last saved medium (Wi-Fi or Bluetooth)
   Future<void> autoConnectLastDevice() async {
     final prefs = await SharedPreferences.getInstance();
     final autoConnectEnabled = prefs.getBool(BleConstants.keyAutoReconnect) ?? true;
-    final lastMac = prefs.getString(BleConstants.keyLastDeviceMac);
+    if (!autoConnectEnabled) return;
 
-    if (!autoConnectEnabled || lastMac == null || lastMac.isEmpty) {
+    final medium = prefs.getString("ecu_connection_medium") ?? "bluetooth";
+    if (medium == "wifi") {
+      final host = prefs.getString("ecu_wifi_host") ?? "192.168.4.1";
+      final port = prefs.getInt("ecu_wifi_port") ?? 8080;
+      await connectViaWifi(host: host, port: port);
       return;
     }
+
+    final lastMac = prefs.getString(BleConstants.keyLastDeviceMac);
+    if (lastMac == null || lastMac.isEmpty) return;
 
     _updateStatus(BleConnectionStatus.connecting, "Menyambung semula ke ECU ($lastMac)...");
     try {
@@ -89,6 +113,59 @@ class BleService {
       await connectToDevice(device);
     } catch (e) {
       _handleDisconnectAndRetry();
+    }
+  }
+
+  /// Connects via Wi-Fi TCP Socket to the ESP32 ECU Hotspot (default 192.168.4.1:8080)
+  Future<bool> connectViaWifi({String host = "192.168.4.1", int port = 8080}) async {
+    _activeMedium = ConnectionMedium.wifi;
+    _wifiHost = host;
+    _wifiPort = port;
+    _reconnectTimer?.cancel();
+    _updateStatus(BleConnectionStatus.connecting, "Menyambung ke Wi-Fi ECU ($host:$port)...");
+
+    try {
+      if (_connectedDevice != null) {
+        try {
+          await _connectedDevice!.disconnect();
+        } catch (_) {}
+        _connectedDevice = null;
+      }
+      _writeCharacteristic = null;
+
+      await _wifiSocket?.close();
+      _wifiSocket?.destroy();
+      _wifiSocket = null;
+
+      _wifiSocket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
+      _wifiSocket!.setOption(SocketOption.tcpNoDelay, true);
+
+      _wifiSocket!.listen(
+        _onDataReceived,
+        onError: (err) {
+          debugPrint("[Wi-Fi TCP] Socket error: $err");
+          _handleDisconnectAndRetry();
+        },
+        onDone: () {
+          debugPrint("[Wi-Fi TCP] Disconnected by ECU");
+          _handleDisconnectAndRetry();
+        },
+        cancelOnError: false,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("ecu_connection_medium", "wifi");
+      await prefs.setString("ecu_wifi_host", host);
+      await prefs.setInt("ecu_wifi_port", port);
+
+      _reconnectAttempts = 0;
+      _updateStatus(BleConnectionStatus.connected, "ECU Disambungkan via Wi-Fi ($host:$port)");
+      _startTelemetryPolling();
+      return true;
+    } catch (e) {
+      debugPrint("[Wi-Fi TCP] Connect Error: $e");
+      _handleDisconnectAndRetry();
+      return false;
     }
   }
 
@@ -108,14 +185,23 @@ class BleService {
 
   /// Connects to a specific BLE device, negotiates MTU, discovers UART services
   Future<bool> connectToDevice(BluetoothDevice device) async {
+    _activeMedium = ConnectionMedium.bluetooth;
     _reconnectTimer?.cancel();
     _updateStatus(BleConnectionStatus.connecting, "Menyambung ke ${device.platformName.isNotEmpty ? device.platformName : device.remoteId}...");
 
     try {
+      if (_wifiSocket != null) {
+        try {
+          await _wifiSocket!.close();
+          _wifiSocket!.destroy();
+        } catch (_) {}
+        _wifiSocket = null;
+      }
+
       await device.connect(autoConnect: false, timeout: const Duration(seconds: 6));
       _connectedDevice = device;
 
-      // 1. Request High MTU (Crucial for 22-byte single-packet notifications)
+      // 1. Request High MTU
       if (Platform.isAndroid) {
         try {
           await device.requestMtu(BleConstants.requestedMtu);
@@ -143,7 +229,6 @@ class BleService {
       }
 
       _writeCharacteristic = writeChar;
-      _notifyCharacteristic = notifyChar;
 
       // 3. Subscribe to Notifications
       await notifyChar.setNotifyValue(true);
@@ -151,6 +236,7 @@ class BleService {
 
       // Save Last Connected Device
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("ecu_connection_medium", "bluetooth");
       await prefs.setString(BleConstants.keyLastDeviceMac, device.remoteId.str);
       await prefs.setString(BleConstants.keyLastDeviceName, device.platformName);
 
@@ -162,7 +248,7 @@ class BleService {
 
       // Listen for unexpected disconnect
       device.connectionState.listen((state) {
-        if (state == BluetoothConnectionState.disconnected && _status == BleConnectionStatus.connected) {
+        if (state == BluetoothConnectionState.disconnected && _status == BleConnectionStatus.connected && _activeMedium == ConnectionMedium.bluetooth) {
           _handleDisconnectAndRetry();
         }
       });
@@ -220,7 +306,7 @@ class BleService {
 
   /// Sends raw command string and waits for ACK / response
   Future<String?> sendCommandWithAck(String cmd, {Duration timeout = const Duration(milliseconds: 800)}) async {
-    if (!isConnected || _writeCharacteristic == null) return null;
+    if (!isConnected) return null;
 
     final completer = Completer<String?>();
     late StreamSubscription sub;
@@ -232,7 +318,17 @@ class BleService {
     });
 
     try {
-      await _writeCharacteristic!.write(utf8.encode(cmd), withoutResponse: false);
+      final bytes = utf8.encode(cmd);
+      if (_activeMedium == ConnectionMedium.wifi && _wifiSocket != null) {
+        _wifiSocket!.add(bytes);
+        await _wifiSocket!.flush();
+      } else if (_writeCharacteristic != null) {
+        await _writeCharacteristic!.write(bytes, withoutResponse: false);
+      } else {
+        await sub.cancel();
+        return null;
+      }
+
       final result = await completer.future.timeout(timeout, onTimeout: () => null);
       await sub.cancel();
       return result;
@@ -243,18 +339,25 @@ class BleService {
   }
 
   Future<void> sendRawBytes(List<int> bytes) async {
-    if (isConnected && _writeCharacteristic != null) {
-      try {
+    if (!isConnected) return;
+    try {
+      if (_activeMedium == ConnectionMedium.wifi && _wifiSocket != null) {
+        _wifiSocket!.add(bytes);
+        await _wifiSocket!.flush();
+      } else if (_writeCharacteristic != null) {
         await _writeCharacteristic!.write(bytes, withoutResponse: true);
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
   }
 
   /// Safe auto-reconnect with backoff cap (max 10 attempts)
   void _handleDisconnectAndRetry() {
     _telemetryPollTimer?.cancel();
     _writeCharacteristic = null;
-    _notifyCharacteristic = null;
+    try {
+      _wifiSocket?.destroy();
+    } catch (_) {}
+    _wifiSocket = null;
 
     if (_reconnectAttempts < BleConstants.maxReconnectAttempts) {
       _reconnectAttempts++;
@@ -264,7 +367,9 @@ class BleService {
       );
       _reconnectTimer?.cancel();
       _reconnectTimer = Timer(BleConstants.reconnectInterval, () {
-        if (_connectedDevice != null) {
+        if (_activeMedium == ConnectionMedium.wifi) {
+          connectViaWifi(host: _wifiHost, port: _wifiPort);
+        } else if (_connectedDevice != null) {
           connectToDevice(_connectedDevice!);
         } else {
           autoConnectLastDevice();
@@ -281,9 +386,18 @@ class BleService {
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
     _telemetryPollTimer?.cancel();
-    _reconnectAttempts = BleConstants.maxReconnectAttempts; // Prevent auto-reconnect on explicit user disconnect
+    _reconnectAttempts = BleConstants.maxReconnectAttempts;
+    if (_wifiSocket != null) {
+      try {
+        await _wifiSocket!.close();
+        _wifiSocket!.destroy();
+      } catch (_) {}
+      _wifiSocket = null;
+    }
     if (_connectedDevice != null) {
-      await _connectedDevice!.disconnect();
+      try {
+        await _connectedDevice!.disconnect();
+      } catch (_) {}
       _connectedDevice = null;
     }
     _updateStatus(BleConnectionStatus.disconnected, "ECU Dinyahsambung");
