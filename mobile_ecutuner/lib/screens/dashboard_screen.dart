@@ -144,7 +144,7 @@ class DashboardScreen extends StatelessWidget {
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.tune_rounded, size: 16),
                     label: Text(
-                      "SETUP: MODE ${t.driveMode}",
+                      "MODE ${t.driveMode}",
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -280,15 +280,6 @@ class DashboardScreen extends StatelessWidget {
   }
 
   void _showDriveModeDialog(BuildContext context, EcuSettingsProvider settingsProv, int currentMode) {
-    final modes = [
-      {"id": 1, "name": "MODE 1: STREET / STANDARD", "desc": "Peta harian lancar & seimbang"},
-      {"id": 2, "name": "MODE 2: SPORT / FAST ROAD", "desc": "Respons pendikit lebih pantas"},
-      {"id": 3, "name": "MODE 3: RACE / TRACK", "desc": "Pemasaan agresif & kuasa maksimum"},
-      {"id": 4, "name": "MODE 4: DYNO TUNE", "desc": "Peta penentukuran dyno"},
-      {"id": 5, "name": "MODE 5: DRAG LAUNCH", "desc": "Pecutan garis lurus berkuasa"},
-      {"id": 6, "name": "MODE 6: ECO / CRUISE", "desc": "Campuran lean untuk jimat petrol"},
-    ];
-
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.backgroundDark,
@@ -310,7 +301,7 @@ class DashboardScreen extends StatelessWidget {
                       Icon(Icons.sports_motorsports_rounded, color: AppColors.racingAmber, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        "PILIH SETUP / DRIVE MODE",
+                        "PILIH MODE (MODE 1 - 6)",
                         style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -322,19 +313,19 @@ class DashboardScreen extends StatelessWidget {
                 ],
               ),
               const Divider(color: AppColors.borderDark),
-              ...modes.map((m) {
-                final int id = m["id"] as int;
+              ...List.generate(6, (idx) {
+                final int id = idx + 1;
                 final bool isSelected = (id == currentMode);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: isSelected ? AppColors.racingAmber.withOpacity(0.15) : AppColors.surfaceDark,
+                      backgroundColor: isSelected ? AppColors.racingAmber.withValues(alpha: 0.15) : AppColors.surfaceDark,
                       side: BorderSide(
                         color: isSelected ? AppColors.racingAmber : AppColors.borderDark,
                         width: isSelected ? 1.8 : 1.0,
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () async {
@@ -364,24 +355,16 @@ class DashboardScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                m["name"] as String,
-                                style: TextStyle(
-                                  color: isSelected ? AppColors.racingAmber : Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                m["desc"] as String,
-                                style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
-                              ),
-                            ],
+                          child: Text(
+                            "MODE $id",
+                            style: TextStyle(
+                              color: isSelected ? AppColors.racingAmber : Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
                         if (isSelected)
