@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/constants/app_colors.dart';
 import '../providers/ecu_settings_provider.dart';
 import '../providers/ecu_telemetry_provider.dart';
+import '../services/ble_service.dart';
 import '../widgets/confirmation_dialogs.dart';
 import 'afr_calibration_screen.dart';
 import 'tps_calibration_screen.dart';
@@ -120,12 +121,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // SETUP / DRIVE MODE SELECTOR CARD
           _buildCard(
-            title: "SETUP / DRIVE MODE (MAP SELECT)",
+            title: "SETUP / DRIVE MODE (MODE 1 - 6)",
             icon: Icons.sports_motorsports_rounded,
             color: AppColors.racingAmber,
             children: [
               const Text(
-                "Pilih mod pemanduan ECU aktif (Peta 1-6):",
+                "Pilih mod pemanduan ECU aktif (Mode 1 - Mode 6):",
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
               ),
               const SizedBox(height: 8),
@@ -135,11 +136,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: List.generate(6, (idx) {
                   final modeNum = idx + 1;
                   final isCurrent = (settingsProv.driveMode == modeNum);
-                  final modeNames = ["STREET", "SPORT", "RACE", "DYNO", "DRAG", "ECO"];
                   return ChoiceChip(
-                    label: Text("MODE $modeNum: ${modeNames[idx]}",
+                    label: Text("MODE $modeNum",
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: isCurrent ? Colors.black : Colors.white,
                         )),
@@ -483,6 +483,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text("• Tuning TCP Port: 8080 (Data & Telemetri)", style: TextStyle(color: AppColors.neonLime, fontSize: 10, fontFamily: 'Courier')),
                     Text("• Web Dashboard: http://192.168.4.1 (Port 80)", style: TextStyle(color: AppColors.neonCyan, fontSize: 10, fontFamily: 'Courier')),
                   ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.wifi, size: 16),
+                  label: const Text("SAMBUNG KE WI-FI ECU (192.168.4.1:8080)", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.neonLime,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () async {
+                    final ble = BleService();
+                    final ok = await ble.connectViaWifi(host: "192.168.4.1", port: 8080);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(ok ? "Berjaya disambung ke ECU via Wi-Fi!" : "Gagal menyambung ke 192.168.4.1:8080. Pastikan telefon bersambung ke Wi-Fi ECUTUNER_AP."),
+                          backgroundColor: ok ? AppColors.neonLime : AppColors.alertRed,
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
             ],
