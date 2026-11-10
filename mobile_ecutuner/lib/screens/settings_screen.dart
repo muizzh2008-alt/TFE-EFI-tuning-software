@@ -207,6 +207,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
 
+          // CYLINDER COUNT CONFIGURATION CARD
+          _buildCard(
+            title: "KONFIGURASI BILANGAN SILINDER",
+            icon: Icons.engineering_rounded,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Bilangan Silinder Enjin (1 - 12):", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                      Text("Menyelaraskan bilangan butang ujian output perkakasan.", style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, color: AppColors.neonCyan),
+                        onPressed: isEngineRunning || settingsProv.activeCylinders <= 1
+                            ? null
+                            : () async {
+                                final newCyl = settingsProv.activeCylinders - 1;
+                                final ok = await settingsProv.sendActiveCylinders(newCyl);
+                                if (!ok) {
+                                  settingsProv.setActiveCylindersLocal(newCyl);
+                                }
+                              },
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceDark,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppColors.borderDark),
+                        ),
+                        child: Text(
+                          "${settingsProv.activeCylinders} SIL",
+                          style: const TextStyle(color: AppColors.neonCyan, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Courier'),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline, color: AppColors.neonCyan),
+                        onPressed: isEngineRunning || settingsProv.activeCylinders >= 12
+                            ? null
+                            : () async {
+                                final newCyl = settingsProv.activeCylinders + 1;
+                                final ok = await settingsProv.sendActiveCylinders(newCyl);
+                                if (!ok) {
+                                  settingsProv.setActiveCylindersLocal(newCyl);
+                                }
+                              },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
           // 2. Radiator Fan PWM Thermal Control (Ciri TuneBoss 7)
           _buildCard(
             title: "RADIATOR FAN PWM CONTROL",
@@ -529,53 +590,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(color: AppColors.alertRed, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
-              const Text("Ujian Penyuntik (Injector 3ms Pulse):", style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Row(
-                children: List.generate(4, (i) {
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.neonCyan,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                        ),
-                        onPressed: isEngineRunning
-                            ? null
-                            : () async {
-                                final res = await settingsProv.runOutputTest("inj", i);
-                                _showTestResultSnackBar(context, res, "Penyuntik Silinder ${i + 1}");
-                              },
-                        child: Text("SIL ${i + 1}", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              Text("Ujian Penyuntik (Injector 3ms Pulse) - ${settingsProv.activeCylinders} Silinder:", style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: List.generate(settingsProv.activeCylinders, (i) {
+                  return SizedBox(
+                    width: 76,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.neonCyan,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
+                      onPressed: isEngineRunning
+                          ? null
+                          : () async {
+                              final res = await settingsProv.runOutputTest("inj", i);
+                              _showTestResultSnackBar(context, res, "Penyuntik Silinder ${i + 1}");
+                            },
+                      child: Text("SIL ${i + 1}", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   );
                 }),
               ),
-              const SizedBox(height: 10),
-              const Text("Ujian Percikan Api (Spark 2.5ms Dwell):", style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Row(
-                children: List.generate(4, (i) {
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.racingAmber,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                        ),
-                        onPressed: isEngineRunning
-                            ? null
-                            : () async {
-                                final res = await settingsProv.runOutputTest("ign", i);
-                                _showTestResultSnackBar(context, res, "Ignition Coil Silinder ${i + 1}");
-                              },
-                        child: Text("SIL ${i + 1}", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Text("Ujian Percikan Api (Spark 2.5ms Dwell) - ${settingsProv.activeCylinders} Silinder:", style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: List.generate(settingsProv.activeCylinders, (i) {
+                  return SizedBox(
+                    width: 76,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.racingAmber,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
+                      onPressed: isEngineRunning
+                          ? null
+                          : () async {
+                              final res = await settingsProv.runOutputTest("ign", i);
+                              _showTestResultSnackBar(context, res, "Ignition Coil Silinder ${i + 1}");
+                            },
+                      child: Text("SIL ${i + 1}", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   );
                 }),
