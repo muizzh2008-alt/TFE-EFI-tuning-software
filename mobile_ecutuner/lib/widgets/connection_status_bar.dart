@@ -77,7 +77,7 @@ class ConnectionStatusBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.15),
+                  color: badgeColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: badgeColor, width: 1),
                 ),
@@ -156,6 +156,10 @@ class ConnectionStatusBar extends StatelessWidget {
   }
 
   void _showConnectionDialog(BuildContext context) {
+    showConnectionModal(context);
+  }
+
+  static void showConnectionModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
