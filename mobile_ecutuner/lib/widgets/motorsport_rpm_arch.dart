@@ -62,7 +62,7 @@ class MotorsportRpmArch extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2A2D35).withValues(alpha: 0.85),
+                          color: const Color(0xFF2A2D35).withOpacity(0.85),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: const Color(0xFF475569),
@@ -214,7 +214,7 @@ class _MotorsportRpmArchPainter extends CustomPainter {
         canvas.drawPath(segPath, fillPaint);
 
         // Subtle dark divider line between active segments
-        linePaint.color = Colors.black.withValues(alpha: 0.25);
+        linePaint.color = Colors.black.withOpacity(0.25);
         canvas.drawPath(segPath, linePaint);
       } else {
         // Inactive segment styling with zone tinting
