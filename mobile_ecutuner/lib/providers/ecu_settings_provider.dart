@@ -18,6 +18,9 @@ class EcuSettingsProvider extends ChangeNotifier {
   int _aeIntensity = 300;
   int _boostPercent = 20;
 
+  // Dynamic Cylinders (1 - 12)
+  int _activeCylinders = 4;
+
   // Fuel Pump PWM
   int _pumpIdleDuty = 60;
   int _pumpWotDuty = 100;
@@ -71,8 +74,21 @@ class EcuSettingsProvider extends ChangeNotifier {
   bool get isLoadingWifi => _isLoadingWifi;
   List<DtcRecord> get dtcList => _dtcList;
   bool get isLoadingDtc => _isLoadingDtc;
+  int get activeCylinders => _activeCylinders;
 
   // Senders
+  Future<bool> sendActiveCylinders(int count) async {
+    _activeCylinders = count.clamp(1, 12);
+    final res = await _ble.sendCommandWithAck(CommandBuilder.setCylinders(_activeCylinders));
+    notifyListeners();
+    return res != null && (res.contains("OK:CYL=") || res == "ACK");
+  }
+
+  void setActiveCylindersLocal(int count) {
+    _activeCylinders = count.clamp(1, 12);
+    notifyListeners();
+  }
+
   Future<bool> sendDriveMode(int mode) async {
     _driveMode = mode.clamp(1, 6);
     final res = await _ble.sendCommandWithAck(CommandBuilder.setDriveMode(_driveMode));
