@@ -374,7 +374,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               widthFactor: progressRatio.clamp(0.0, 1.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.90),
+                  color: Colors.white.withOpacity(0.90),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -571,7 +571,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
-          color: isActive ? activeColor.withValues(alpha: 0.20) : const Color(0xFF13161A),
+          color: isActive ? activeColor.withOpacity(0.20) : const Color(0xFF13161A),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: isActive ? activeColor : const Color(0xFF242730),
@@ -664,7 +664,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       return OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: isSelected
-                              ? AppColors.racingAmber.withValues(alpha: 0.20)
+                              ? AppColors.racingAmber.withOpacity(0.20)
                               : const Color(0xFF1B1E26),
                           side: BorderSide(
                             color: isSelected ? AppColors.racingAmber : const Color(0xFF333842),
@@ -801,7 +801,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: t.antilagActive ? AppColors.alertRed.withValues(alpha: 0.15) : const Color(0xFF1B1E26),
+                      backgroundColor: t.antilagActive ? AppColors.alertRed.withOpacity(0.15) : const Color(0xFF1B1E26),
                       side: BorderSide(
                         color: t.antilagActive ? AppColors.alertRed : const Color(0xFF3B4250),
                       ),
