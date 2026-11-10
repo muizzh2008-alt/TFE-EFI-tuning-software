@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/constants/app_colors.dart';
 import '../widgets/connection_status_bar.dart';
 import 'dashboard_screen.dart';
@@ -17,13 +18,24 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    FuelMapScreen(),
-    IgnMapScreen(),
-    SettingsScreen(),
-    DiagnosticsScreen(),
-  ];
+  void _onTabSelected(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 0) {
+      // Force landscape when on motorsport dashboard
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      // Allow flexible orientations on tuning maps and diagnostic screens
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,17 +44,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Always-visible Global Connection Status Bar
-            const ConnectionStatusBar(),
+            // Show global connection status bar on non-dashboard tabs
+            if (_currentIndex != 0) const ConnectionStatusBar(),
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,
-                children: _screens,
+                children: [
+                  DashboardScreen(
+                    onNavigateTab: _onTabSelected,
+                  ),
+                  const FuelMapScreen(),
+                  const IgnMapScreen(),
+                  const SettingsScreen(),
+                  const DiagnosticsScreen(),
+                ],
               ),
             ),
           ],
         ),
       ),
+      // Bottom navigation bar sentiasa kelihatan untuk akses mudah ke semua tab
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppColors.surfaceDark,
@@ -50,7 +71,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: _onTabSelected,
           backgroundColor: AppColors.surfaceDark,
           selectedItemColor: AppColors.neonLime,
           unselectedItemColor: AppColors.textMuted,
