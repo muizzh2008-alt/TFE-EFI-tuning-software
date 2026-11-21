@@ -97,6 +97,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
 
+          // SPEED UNIT SELECTOR CARD (km/h atau mph)
+          _buildCard(
+            title: "SPEED UNIT / UNIT KELAJUAN",
+            icon: Icons.speed_rounded,
+            color: AppColors.neonCyan,
+            children: [
+              const Text(
+                "Pilih unit paparan kelajuan:",
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ChoiceChip(
+                      label: const Text("km/h",
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      selected: settingsProv.speedUnit == "km/h",
+                      selectedColor: AppColors.neonCyan,
+                      backgroundColor: AppColors.cardDark,
+                      labelStyle: TextStyle(
+                        color: settingsProv.speedUnit == "km/h" ? Colors.black : Colors.white,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) settingsProv.setSpeedUnit("km/h");
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ChoiceChip(
+                      label: const Text("mph",
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      selected: settingsProv.speedUnit == "mph",
+                      selectedColor: AppColors.neonCyan,
+                      backgroundColor: AppColors.cardDark,
+                      labelStyle: TextStyle(
+                        color: settingsProv.speedUnit == "mph" ? Colors.black : Colors.white,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) settingsProv.setSpeedUnit("mph");
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "Unit aktif: ${settingsProv.speedUnitLabel}  •  Disimpan automatik",
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
           // 1. Base Engine Settings (Rev Limit & TDC Offset)
           _buildCard(
             title: "ENGINE PARAMETERS",
