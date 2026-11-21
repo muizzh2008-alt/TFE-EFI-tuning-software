@@ -1,10 +1,15 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/protocol/command_builder.dart';
 import '../models/dtc_record.dart';
 import '../services/ble_service.dart';
 
 class EcuSettingsProvider extends ChangeNotifier {
   final BleService _ble = BleService();
+
+  // Speed Unit Configuration ("km/h" or "mph")
+  static const String keySpeedUnit = "ecu_speed_unit";
+  String _speedUnit = "km/h";
 
   // Engine Settings
   int _revLimit = 12000;
@@ -75,6 +80,54 @@ class EcuSettingsProvider extends ChangeNotifier {
   List<DtcRecord> get dtcList => _dtcList;
   bool get isLoadingDtc => _isLoadingDtc;
   int get activeCylinders => _activeCylinders;
+
+  // Speed Unit Getters & Methods
+  String get speedUnit => _speedUnit;
+  bool get isMph => _speedUnit == "mph";
+  String get speedUnitLabel => _speedUnit == "mph" ? "mph" : "km/h";
+
+  EcuSettingsProvider() {
+    _loadSpeedUnit();
+  }
+
+  Future<void> _loadSpeedUnit() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _speedUnit = prefs.getString(keySpeedUnit) ?? "km/h";
+      notifyListeners();
+    } catch (e) {
+      debugPrint("[SettingsProvider] Gagal memuatkan speed unit: $e");
+    }
+  }
+
+  Future<void> setSpeedUnit(String unit) async {
+    if (unit != "km/h" && unit != "mph") return;
+    if (_speedUnit == unit) return;
+    _speedUnit = unit;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(keySpeedUnit, unit);
+    } catch (e) {
+      debugPrint("[SettingsProvider] Gagal menyimpan speed unit: $e");
+    }
+  }
+
+  /// Menukar kelajuan input (km/h dari ECU) kepada unit pilihan (km/h atau mph)
+  int convertSpeed(num speedKph) {
+    if (_speedUnit == "mph") {
+      return (speedKph * 0.621371).round();
+    }
+    return speedKph.round();
+  }
+
+  /// Format paparan kelajuan mengikut unit pilihan
+  String formatSpeed(num speedKph) {
+    if (_speedUnit == "mph") {
+      return "${(speedKph * 0.621371).round()}";
+    }
+    return "${speedKph.round()}";
+  }
 
   // Senders
   Future<bool> sendActiveCylinders(int count) async {
