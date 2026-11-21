@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
 import 'providers/ecu_map_provider.dart';
@@ -8,6 +9,11 @@ import 'screens/main_navigation_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Paksa seluruh aplikasi menggunakan orientasi LANDSCAPE sahaja
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   runApp(const EcuTunerMobileApp());
 }
 
@@ -46,7 +52,7 @@ class EcuTunerMobileApp extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             color: AppColors.surfaceDark,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -57,7 +63,7 @@ class EcuTunerMobileApp extends StatelessWidget {
             activeTrackColor: AppColors.neonLime,
             inactiveTrackColor: AppColors.borderDark,
             thumbColor: AppColors.neonLime,
-            overlayColor: AppColors.neonLime.withOpacity(0.2),
+            overlayColor: AppColors.neonLime.withValues(alpha: 0.2),
             trackHeight: 4,
           ),
         ),
