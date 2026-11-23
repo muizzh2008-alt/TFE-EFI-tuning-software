@@ -52,7 +52,7 @@ class EcuTunerMobileApp extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          cardTheme: CardThemeData(
+          cardTheme: CardTheme(
             color: AppColors.surfaceDark,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -63,7 +63,7 @@ class EcuTunerMobileApp extends StatelessWidget {
             activeTrackColor: AppColors.neonLime,
             inactiveTrackColor: AppColors.borderDark,
             thumbColor: AppColors.neonLime,
-            overlayColor: AppColors.neonLime.withValues(alpha: 0.2),
+            overlayColor: AppColors.neonLime.withOpacity(0.2),
             trackHeight: 4,
           ),
         ),
