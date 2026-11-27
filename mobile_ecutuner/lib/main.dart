@@ -7,13 +7,16 @@ import 'providers/ecu_settings_provider.dart';
 import 'providers/ecu_telemetry_provider.dart';
 import 'screens/main_navigation_screen.dart';
 
-void main() {
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Paksa seluruh aplikasi menggunakan orientasi LANDSCAPE sahaja
-  SystemChrome.setPreferredOrientations([
+
+  // Paksa seluruh aplikasi menggunakan Landscape sahaja
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
+
   runApp(const EcuTunerMobileApp());
 }
 
