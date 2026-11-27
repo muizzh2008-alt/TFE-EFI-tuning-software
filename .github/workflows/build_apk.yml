@@ -1,3 +1,4 @@
+
 name: Build Android APK
 
 on:
@@ -28,12 +29,23 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install Dependencies
-        working-directory: mobile_ecutuner         
+      - name: Check Flutter Version
+        run: flutter --version
+
+      - name: Clean Project
+        working-directory: mobile_ecutuner
+        run: flutter clean
+
+      - name: Remove Old Lockfile
+        working-directory: mobile_ecutuner
+        run: rm -f pubspec.lock
+
+      - name: Get Dependencies
+        working-directory: mobile_ecutuner
         run: flutter pub get
 
       - name: Build Release APK
-        working-directory: mobile_ecutuner          
+        working-directory: mobile_ecutuner
         run: flutter build apk --release
 
       - name: Upload APK Artifact
